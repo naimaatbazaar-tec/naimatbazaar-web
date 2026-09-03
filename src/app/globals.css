@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #8B0000;
+  --color-primary-dark: #660000;
+  --color-accent: #D4AF37;
+  --color-wa: #25D366;
+  --color-bgCustom: #FCFCFC;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bgCustom);
+  color: #222222;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+@keyframes heartPump {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.animate-heartPump {
+  animation: heartPump 1.2s ease-in-out infinite;
+}
