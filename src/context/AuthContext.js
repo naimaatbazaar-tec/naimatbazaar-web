@@ -39,10 +39,16 @@ export function AuthProvider({ children }) {
     return data.data;
   };
 
-  const loginWithGoogle = async (idToken) => {
-    const { data } = await api.post('/auth/google', { idToken });
+  // Updated to support accessToken from @react-oauth/google (mapping parameter to token expected by backend)
+  const loginWithGoogle = async (accessToken) => {
+    const { data } = await api.post('/auth/google', { token: accessToken });
     persistAuth(data.data);
     return data.data;
+  };
+
+  // Alias for compatibility if any components call googleLogin instead of loginWithGoogle
+  const googleLogin = async (accessToken) => {
+    return await loginWithGoogle(accessToken);
   };
 
   const logout = () => {
@@ -59,6 +65,7 @@ export function AuthProvider({ children }) {
         login,
         register,
         loginWithGoogle,
+        googleLogin,
         logout,
       }}
     >

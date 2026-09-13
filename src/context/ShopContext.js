@@ -33,15 +33,31 @@ export function ShopProvider({ children }) {
     }
   }, [cart]);
 
-  // Updated addToCart accepts product object or productId string
-  const addToCart = (productOrTitle, grammage, price, qty = 1) => {
+  // Robust addToCart with comprehensive image resolution
+  const addToCart = (productOrTitle, grammage, price, image = '', qty = 1) => {
     setCart((prevCart) => {
       let productId = null;
       let title = '';
+      let resolvedImage = image;
 
       if (typeof productOrTitle === 'object' && productOrTitle !== null) {
         productId = productOrTitle._id || productOrTitle.id;
         title = productOrTitle.title || productOrTitle.name;
+        
+        // Check every possible image format from backend schemas
+        resolvedImage = 
+          image ||
+          productOrTitle.image || 
+          productOrTitle.imageUrl || 
+          productOrTitle.img ||
+          productOrTitle.thumbnail ||
+          productOrTitle.photo ||
+          (Array.isArray(productOrTitle.images) && productOrTitle.images.length > 0
+            ? (typeof productOrTitle.images[0] === 'string' 
+                ? productOrTitle.images[0] 
+                : productOrTitle.images[0]?.url || productOrTitle.images[0]?.secure_url || '') 
+            : '') || 
+          '';
       } else {
         title = productOrTitle;
       }
@@ -57,6 +73,9 @@ export function ShopProvider({ children }) {
       if (existingIdx > -1) {
         const updated = [...prevCart];
         updated[existingIdx].qty += qty;
+        if (!updated[existingIdx].image && resolvedImage) {
+          updated[existingIdx].image = resolvedImage;
+        }
         return updated;
       }
 
@@ -68,6 +87,7 @@ export function ShopProvider({ children }) {
           title,
           grammage,
           price: Number(price),
+          image: resolvedImage,
           qty: Number(qty),
         },
       ];

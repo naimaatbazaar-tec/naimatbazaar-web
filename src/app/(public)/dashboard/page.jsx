@@ -52,15 +52,13 @@ export default function DashboardPage() {
           }
         }
 
-        // 2. Fallback: If no orders found, try fetching all orders or querying by user email/ID directly if a public/search route exists,
-        // or check if we can query matching shipping info email
+        // 2. Fallback: If no orders found, try fetching all orders or querying by user email/ID directly
         if (orderList.length === 0 && parsedUser?.email) {
-          const allRes = await fetch(`${apiUrl}/orders`); // Adjust if your backend has an unprotected or admin route, or create a direct user filter route
+          const allRes = await fetch(`${apiUrl}/orders`);
           if (allRes.ok) {
             const allData = await allRes.json();
             const allOrders = Array.isArray(allData) ? allData : allData.data || allData.orders || [];
             
-            // Filter client-side by user email in shippingInfo or matching user ID
             orderList = allOrders.filter((ord) => {
               const ordUserId = ord.user?._id || ord.user;
               const ordEmail = ord.shippingInfo?.email?.toLowerCase();
@@ -175,18 +173,43 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* Order Items List */}
-                    <div className="space-y-1.5 pt-1">
-                      {order.items?.map((item, idx) => (
-                        <div key={idx} className="flex justify-between text-gray-700">
-                          <span>
-                            {item.title || item.product?.title || 'Khaalis Product'} ({item.grammage || 'Std'}) x {item.qty}
-                          </span>
-                          <span className="font-semibold text-gray-900">
-                            Rs. {(item.price * item.qty).toLocaleString()}
-                          </span>
-                        </div>
-                      ))}
+                    {/* Order Items List with Images */}
+                    <div className="space-y-2.5 pt-1">
+                      {order.items?.map((item, idx) => {
+                        // Check multiple fallback properties where the image URL might be stored
+                        const itemImage =
+                          item.image ||
+                          item.product?.image ||
+                          item.product?.imageUrl ||
+                          '/placeholder-image.png';
+
+                        return (
+                          <div key={idx} className="flex items-center justify-between gap-3 text-gray-700">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={itemImage}
+                                alt={item.title || item.product?.title || 'Product'}
+                                className="w-12 h-12 object-cover rounded-xl border border-gray-200 bg-white shrink-0"
+                                onError={(e) => {
+                                  // Fallback if image fails to load
+                                  e.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="%23cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                                }}
+                              />
+                              <div>
+                                <p className="font-bold text-gray-900">
+                                  {item.title || item.product?.title || 'Khaalis Product'}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Weight: {item.grammage || 'Std'} | Qty: {item.qty}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="font-semibold text-gray-900 shrink-0">
+                              Rs. {(item.price * item.qty).toLocaleString()}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

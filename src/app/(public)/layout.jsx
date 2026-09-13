@@ -21,7 +21,7 @@ function PublicLayoutContent({ children }) {
   } = useShop();
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <TopBar />
       <Header cartCount={totalCartCount} setIsCartOpen={setIsCartOpen} />
       
@@ -34,8 +34,7 @@ function PublicLayoutContent({ children }) {
       
       <Footer />
 
-
-{/* Fully Animated Compact Floating WhatsApp Button */}
+      {/* Fully Animated Compact Floating WhatsApp Button */}
       <motion.a 
         href="https://wa.me/923258060699?text=Assalam-o-Alaikum%20Naimat%20Bazaar,%20mujhe%20products%20ke%20baare%20mein%20poochna%20hai." 
         className="fixed bottom-5 right-5 bg-[#25D366] text-white w-11 h-11 rounded-full flex items-center justify-center shadow-xl z-40 cursor-pointer overflow-visible group" 
@@ -70,9 +69,7 @@ function PublicLayoutContent({ children }) {
           </svg>
         </div>
       </motion.a>
-
-
-    </>
+    </div>
   );
 }
 

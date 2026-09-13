@@ -16,8 +16,10 @@ function LoginForm() {
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return; // Prevent double submissions
+    
     setErrorMsg('');
     setIsLoading(true);
 
@@ -27,19 +29,33 @@ function LoginForm() {
         formData.password
       );
 
-      const loggedInUser = responseData?.user;
+      // Extract user and token safely from response structure (adjust based on your API)
+      const loggedInUser = responseData?.user || responseData?.data?.user;
+      const token = responseData?.token || responseData?.data?.token;
+
+      if (loggedInUser) {
+        localStorage.setItem('user', JSON.stringify(loggedInUser));
+      }
+      if (token) {
+        localStorage.setItem('token', token);
+      }
+
+      // Fallback to localStorage if responseData structure differs
+      const activeUser = loggedInUser || JSON.parse(localStorage.getItem('user') || '{}');
+      const userRole = activeUser?.role ? String(activeUser.role).trim().toLowerCase() : '';
+
+      setIsLoading(false);
 
       if (redirectTo) {
-        router.replace(redirectTo);
-      } else if (loggedInUser?.role === 'admin') {
-        router.replace('/admin');
+        router.push(redirectTo);
+      } else if (userRole === 'admin') {
+        router.push('/admin');
       } else {
-        router.replace('/dashboard');
+        router.push('/dashboard');
       }
     } catch (err) {
       console.error('Login Error:', err);
       setErrorMsg(err.response?.data?.message || err.message || 'Invalid email or password.');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -75,7 +91,7 @@ function LoginForm() {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full p-3.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#5c0000] focus:border-[#5c0000] outline-none transition"
-              placeholder="admin@naimatbazaar.com"
+              placeholder="user@gmail.com"
             />
           </div>
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { ShoppingCart, Eye, CheckCircle2, Clock, XCircle, Truck, Search, Trash2, Edit3, DollarSign, Package } from 'lucide-react';
+import { ShoppingCart, Eye, CheckCircle2, Clock, XCircle, Truck, Search, Trash2, Edit3, DollarSign, Package, FileText } from 'lucide-react';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -13,6 +13,7 @@ export default function AdminOrdersPage() {
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
 
   // Edit form state
@@ -25,7 +26,7 @@ export default function AdminOrdersPage() {
     city: '',
   });
 
-const fetchOrders = async () => {
+  const fetchOrders = async () => {
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
@@ -34,7 +35,6 @@ const fetchOrders = async () => {
       const response = await api.get(`/admin/orders?${params.toString()}`);
       const resData = response.data;
 
-      // Safely extract the array from different possible API response structures
       const ordersArray = Array.isArray(resData) 
         ? resData 
         : Array.isArray(resData.data) 
@@ -50,13 +50,11 @@ const fetchOrders = async () => {
       }
     } catch (err) {
       console.error('Failed to fetch orders:', err);
-      setOrders([]); // Fallback to an empty array on error
+      setOrders([]);
     } finally {
       setLoading(false);
     }
   };
-
-
 
   useEffect(() => {
     fetchOrders();
@@ -73,6 +71,24 @@ const fetchOrders = async () => {
     } catch (err) {
       console.error('Failed to update status:', err);
       alert('Error updating order status');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  // Handler to approve payment verification pending status
+  const handleApprovePayment = async (orderId) => {
+    setStatusLoading(true);
+    try {
+      await api.patch(`/admin/orders/${orderId}/approve-payment`, { paymentStatus: 'paid' });
+      fetchOrders();
+      if (selectedOrder && selectedOrder._id === orderId) {
+        setSelectedOrder((prev) => ({ ...prev, paymentStatus: 'paid' }));
+      }
+      alert('Payment approved successfully!');
+    } catch (err) {
+      console.error('Failed to approve payment:', err);
+      alert('Error approving payment');
     } finally {
       setStatusLoading(false);
     }
@@ -235,6 +251,7 @@ const fetchOrders = async () => {
                 <th className="p-4">Customer</th>
                 <th className="p-4">Total Amount</th>
                 <th className="p-4">Status</th>
+                <th className="p-4">Payment Verification</th>
                 <th className="p-4">Date</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
@@ -249,6 +266,23 @@ const fetchOrders = async () => {
                   </td>
                   <td className="p-4 font-bold text-emerald-700">Rs. {order.total}</td>
                   <td className="p-4">{getStatusBadge(order.orderStatus)}</td>
+                  
+                  {/* Payment Verification Status Badge */}
+                  <td className="p-4">
+                    {order.paymentStatus === 'verification_pending' ? (
+                      <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-extrabold flex items-center w-max space-x-1 shadow-sm border border-amber-300">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Payment Verification Pending</span>
+                      </span>
+                    ) : (
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase w-max inline-block ${
+                        order.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {order.paymentStatus || 'pending'}
+                      </span>
+                    )}
+                  </td>
+
                   <td className="p-4 text-gray-500 text-xs">{new Date(order.createdAt).toLocaleDateString()}</td>
                   <td className="p-4 text-right space-x-1">
                     <button
@@ -281,7 +315,7 @@ const fetchOrders = async () => {
       </div>
 
       {/* Order Details View Modal */}
-      {selectedOrder && !isEditModalOpen && (
+      {selectedOrder && !isEditModalOpen && !isReceiptModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b pb-4">
@@ -305,8 +339,39 @@ const fetchOrders = async () => {
                   {selectedOrder.shippingInfo?.addressLine || selectedOrder.shippingInfo?.address || 'N/A'}, {selectedOrder.shippingInfo?.city}
                 </p>
                 <p className="text-xs font-semibold text-gray-500 mt-2">Payment Method: <span className="uppercase">{selectedOrder.paymentMethod}</span></p>
+                <p className="text-xs font-semibold text-gray-500">Payment Status: <span className="uppercase">{selectedOrder.paymentStatus}</span></p>
               </div>
             </div>
+
+            {/* View Receipt and Approve Controls for Online Payments */}
+            {selectedOrder.paymentMethod === 'online' && (
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-amber-900 uppercase">Online Payment Review</p>
+                  <p className="text-xs text-amber-700 mt-0.5">Check user-uploaded receipt before confirming transaction.</p>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsReceiptModalOpen(true)}
+                    className="px-3.5 py-2 bg-white border border-amber-300 text-amber-900 rounded-xl text-xs font-bold hover:bg-amber-100 transition shadow-sm cursor-pointer flex items-center space-x-1"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>View Receipt</span>
+                  </button>
+                  {selectedOrder.paymentStatus === 'verification_pending' && (
+                    <button
+                      type="button"
+                      disabled={statusLoading}
+                      onClick={() => handleApprovePayment(selectedOrder._id)}
+                      className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition shadow-sm cursor-pointer"
+                    >
+                      Approve Payment
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div>
               <p className="text-xs font-bold text-gray-400 uppercase mb-3">Order Items</p>
@@ -368,6 +433,53 @@ const fetchOrders = async () => {
         </div>
       )}
 
+      {/* View Receipt Modal */}
+      {isReceiptModalOpen && selectedOrder && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-center">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="text-lg font-bold text-gray-900">Payment Receipt - Order #{selectedOrder.orderNumber}</h3>
+              <button onClick={() => setIsReceiptModalOpen(false)} className="text-gray-400 hover:text-gray-700 font-bold text-lg cursor-pointer">✕</button>
+            </div>
+            
+            <div className="bg-gray-100 p-2 rounded-2xl flex items-center justify-center min-h-[300px]">
+              {selectedOrder.receiptUrl || selectedOrder.receipt ? (
+                <img 
+                  src={selectedOrder.receiptUrl || selectedOrder.receipt} 
+                  alt="Payment Receipt" 
+                  className="max-h-[400px] object-contain rounded-xl shadow-md"
+                />
+              ) : (
+                <p className="text-sm text-gray-500 font-medium">No receipt image file was uploaded for this order.</p>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-2">
+              {selectedOrder.paymentStatus === 'verification_pending' && (
+                <button
+                  type="button"
+                  disabled={statusLoading}
+                  onClick={() => {
+                    handleApprovePayment(selectedOrder._id);
+                    setIsReceiptModalOpen(false);
+                  }}
+                  className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition shadow cursor-pointer"
+                >
+                  Approve Payment
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsReceiptModalOpen(false)}
+                className="px-6 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black transition cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Edit Order Modal */}
       {isEditModalOpen && selectedOrder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -397,6 +509,7 @@ const fetchOrders = async () => {
                     className="w-full p-3 border border-gray-300 rounded-xl text-sm outline-none focus:border-[#5c0000] bg-white"
                   >
                     <option value="pending">Pending</option>
+                    <option value="verification_pending">Verification Pending</option>
                     <option value="paid">Paid</option>
                     <option value="failed">Failed</option>
                     <option value="refunded">Refunded</option>

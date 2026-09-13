@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "@/context/AuthContext";
 import { ShopProvider } from "@/context/ShopContext";
 import CartDrawer from "@/components/public/CartDrawer";
@@ -95,12 +96,14 @@ export default function RootLayout({ children }) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased bg-[#5c0000]`}
     >
       <body className="min-h-screen flex flex-col bg-[#5c0000] text-gray-900 m-0 p-0">
-        <AuthProvider>
-          <ShopProvider>
-            {children}
-            <CartDrawer />
-          </ShopProvider>
-        </AuthProvider>
+        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}>
+          <AuthProvider>
+            <ShopProvider>
+              {children}
+              <CartDrawer />
+            </ShopProvider>
+          </AuthProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );

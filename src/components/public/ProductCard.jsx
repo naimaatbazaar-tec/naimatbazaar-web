@@ -12,13 +12,16 @@ export default function ProductCard({ product }) {
     ? product.variants 
     : (product.sizes || []);
 
-  const defaultVariant = variants[0] || { grammage: 'Default', price: 0 };
+  const defaultVariant = variants[0] || { grammage: 'Default', size: 'Default', price: 0, sale: 0, orig: 0 };
 
   const [selectedGrammage, setSelectedGrammage] = useState(
     defaultVariant.grammage || defaultVariant.size
   );
   const [currentPrice, setCurrentPrice] = useState(
     defaultVariant.price || defaultVariant.sale || 0
+  );
+  const [origPrice, setOrigPrice] = useState(
+    defaultVariant.orig || defaultVariant.price || 0
   );
 
   // Extract main image URL safely from backend array or fallback string
@@ -35,6 +38,7 @@ export default function ProductCard({ product }) {
     setSelectedGrammage(grammageVal);
     if (found) {
       setCurrentPrice(found.price || found.sale || 0);
+      setOrigPrice(found.orig || found.price || found.sale || 0);
     }
   };
 
@@ -45,10 +49,10 @@ export default function ProductCard({ product }) {
       viewport={{ once: true }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       whileHover={{ y: -6, boxShadow: "0 12px 24px -8px rgba(0, 0, 0, 0.12)" }}
-      className="bg-white border border-gray-200 rounded-xl p-3.5 flex flex-col justify-between shadow-sm transition-shadow duration-300"
+      className="bg-white border border-gray-200 rounded-xl p-3.5 flex flex-col justify-between shadow-sm transition-shadow duration-300 relative overflow-hidden"
     >
       <div>
-        {/* Product Image */}
+        {/* Product Image Container */}
         <div className="w-full h-[170px] bg-gray-50 rounded-lg overflow-hidden mb-2.5 relative">
           {(product.badge || product.isFeatured) && (
             <motion.span
@@ -110,11 +114,26 @@ export default function ProductCard({ product }) {
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.2 }}
             >
+              {origPrice > currentPrice && (
+                <span className="line-through text-gray-500 text-xs mr-1.5">
+                  Rs. {origPrice.toLocaleString()}
+                </span>
+              )}
               <span className="text-[#5c0000] text-base font-black">
                 Rs. {currentPrice.toLocaleString()}
               </span>
             </motion.div>
           </AnimatePresence>
+
+          {product.isFreeDelivery && (
+            <motion.span 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[10px] text-wa font-bold block mt-0.5"
+            >
+              🚚 FREE DELIVERY
+            </motion.span>
+          )}
         </div>
 
         {/* Blog / Story Button */}
@@ -131,7 +150,7 @@ export default function ProductCard({ product }) {
         <motion.button
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => addToCart(product, selectedGrammage, currentPrice)}
+          onClick={() => addToCart(product, selectedGrammage, currentPrice, mainImage)}
           className="w-full bg-[#5c0000] hover:bg-[#400000] text-white border-none py-2 rounded font-bold text-xs cursor-pointer shadow-sm transition-colors"
         >
           Add to Cart
