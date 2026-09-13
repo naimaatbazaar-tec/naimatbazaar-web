@@ -15,9 +15,9 @@ export default function ProductCatalog() {
       async function fetchProducts() {
         setLoading(true);
         try {
-          const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+          const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://naimatbazaar-backend.vercel.app/api';
           const queryParam = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-          
+
           const res = await fetch(`${API_BASE}/products${queryParam}`);
           if (!res.ok) throw new Error('Failed to fetch products');
 
